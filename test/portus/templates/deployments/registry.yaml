@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: registry
+  labels:
+    name: registry
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+        name: registry
+    spec:
+      containers:
+      - name: registry
+        image: "{{ .Values.images.registry }}:{{ .Values.imageTag.registry }}"
+        imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
+        env:
+          - name: REGISTRY_AUTH_TOKEN_REALM
+            value: "http://web:3000/v2/token"
+          - name: REGISTRY_AUTH_TOKEN_SERVICE
+            value: "web:5000"
+          - name: REGISTRY_AUTH_TOKEN_ISSUER
+            value: "web"
+        ports:
+          - containerPort: 5000
+            protocol: TCP
+            name: registry1
+        volumeMounts:
+          - mountPath: /registry_data
+            name: registry-data
+      volumes:
+      - name: registry-data
+        emptyDir: {}

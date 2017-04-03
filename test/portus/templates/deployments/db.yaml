@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    name: db
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+        name: db
+    spec:
+      containers:
+      - name: db
+        image: "library/mariadb:10.0.23"
+        imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: "portus"
+        ports:
+          - containerPort: 6379
+            protocol: TCP

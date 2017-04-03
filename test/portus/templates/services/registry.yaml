@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  labels:
+    name: registry
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  ports:
+  - name: registry
+    port: 5000
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    name: registry
+    app: {{ template "fullname" . }}

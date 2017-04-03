@@ -1,0 +1,72 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    name: web
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+    component: web
+spec:
+  template:
+    metadata:
+      labels:
+        name: web
+        app: {{ template "fullname" . }}
+        component: web
+    spec:
+      containers:
+        - image: "{{ .Values.images.web }}:{{ .Values.imageTag.web }}"
+          name: web
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - "pumactl -F /portus/config/puma.rb start"
+          env:
+            - name: PORTUS_MACHINE_FQDN_VALUE
+              value: {{ default "" .Values.FQDN }}
+            - name: PORTUS_DB_HOST
+              value: "db"
+            - name: PORTUS_DB_PASSWORD
+              value: "portus"
+            - name: PORTUS_PUMA_HOST
+              value: "0.0.0.0:3000"
+            - name: PORTUS_PUMA_WORKERS
+              value: "2"
+            - name: PORTUS_PUMA_MAX_THREADS
+              value: "4"
+          ports:
+            - containerPort: 3000
+              name: portus
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /portus
+              name: portus-config
+        - image: "{{ .Values.images.web }}:{{ .Values.imageTag.web }}"
+          name: crono
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - "/bin/crono"
+          env:
+            - name: PORTUS_MACHINE_FQDN_VALUE
+              value: {{ default "" .Values.FQDN }}
+            - name: PORTUS_DB_HOST
+              value: "db"
+            - name: PORTUS_DB_PASSWORD
+              value: "portus"
+          volumeMounts:
+            - mountPath: /portus
+              name: portus-config
+      volumes:
+        - name: portus-config
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: web
+          {{- else }}
+          emptyDir: {}
+          {{- end -}}
