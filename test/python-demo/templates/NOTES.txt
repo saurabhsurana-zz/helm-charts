@@ -1,0 +1,7 @@
+python-demo can be accessed by URL.
+
+# If LoadBalancer is used then you can use:
+curl http://<LoadBalancerIP>:5000
+
+# If NodePort is used then you can use:
+curl http://<NodeIP>:<NodePort>

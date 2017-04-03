@@ -1,0 +1,24 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    name: redis
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+        name: redis
+    spec:
+      containers:
+      - name: redis
+        image: "redis:latest"
+        imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
+        ports:
+          - containerPort: 6379
+            protocol: TCP

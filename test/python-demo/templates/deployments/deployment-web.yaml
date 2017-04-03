@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    name: web
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+        name: web
+    spec:
+      containers:
+      - name: web
+        image: "suranasaurabh/python-demo:{{ .Values.imageTag }}"
+        imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
+        env:
+        - name: ENABLE_REDIS
+          value: "True"
+        - name: DEBUG
+          value: "True"
+        ports:
+          - containerPort: 5000
+            name: http
+            protocol: TCP
