@@ -2,37 +2,42 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: registry
-  labels:
-    name: registry
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
 spec:
+  replicas: 1
   template:
     metadata:
       labels:
-        app: {{ template "fullname" . }}
-        name: registry
+        app: registry
+        tier: registry
     spec:
       containers:
       - name: registry
-        image: "{{ .Values.images.registry }}:{{ .Values.imageTag.registry }}"
-        imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
-        env:
-          - name: REGISTRY_AUTH_TOKEN_REALM
-            value: "http://web:3000/v2/token"
-          - name: REGISTRY_AUTH_TOKEN_SERVICE
-            value: "web:5000"
-          - name: REGISTRY_AUTH_TOKEN_ISSUER
-            value: "web"
+        image: library/registry:2.6
+        command: ["/bin/sh", "/etc/docker/registry/init"]
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
         ports:
-          - containerPort: 5000
-            protocol: TCP
-            name: registry1
+        - containerPort: 443
+        - containerPort: 5001
         volumeMounts:
-          - mountPath: /registry_data
-            name: registry-data
+        - name: registry-config
+          mountPath: /etc/docker/registry
+          readOnly: true
+        - name: certificates
+          mountPath: /certificates
+          readOnly: true
+        - name: registry-storage
+          mountPath: /registry-data
       volumes:
-      - name: registry-data
-        emptyDir: {}
+      - name: certificates
+        secret:
+          secretName: certificates
+      - name: registry-config
+        secret:
+          secretName: registry-config
+      - name: registry-storage
+        persistentVolumeClaim:
+          claimName: registry-claim

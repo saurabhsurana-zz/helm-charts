@@ -1,19 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: db
+  name: mariadb
   labels:
-    name: db
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    app: mariadb
+    tier: backend
 spec:
   ports:
-  - name: db
-    port: 3306
+  - port: 3306
     targetPort: 3306
-    protocol: TCP
   selector:
-    name: db
-    app: {{ template "fullname" . }}
+    app: mariadb
+    tier: backend

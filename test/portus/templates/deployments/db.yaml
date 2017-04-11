@@ -1,27 +1,43 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: db
-  labels:
-    name: db
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  name: mariadb
 spec:
+  replicas: 1
   template:
     metadata:
       labels:
-        app: {{ template "fullname" . }}
-        name: db
+        app: mariadb
+        tier: backend
     spec:
       containers:
-      - name: db
-        image: "library/mariadb:10.0.23"
-        imagePullPolicy: {{ .Values.imagePullPolicy | quote }}
+      - name: master
+        image: mariadb:10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
         env:
-          - name: MYSQL_ROOT_PASSWORD
-            value: "portus"
+        - name: MYSQL_USER
+          value: portus
+        - name: MYSQL_DATABASE
+          value: portus_production
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secrets
+              key: root
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secrets
+              key: password
         ports:
-          - containerPort: 6379
-            protocol: TCP
+        - containerPort: 3306
+        volumeMounts:
+        - name: mariadb-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mariadb-storage
+        persistentVolumeClaim:
+          claimName: mariadb-storage

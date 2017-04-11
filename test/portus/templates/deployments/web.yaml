@@ -1,72 +1,68 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: web
-  labels:
-    name: web
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-    component: web
+  name: portus
 spec:
+  replicas: 1
   template:
     metadata:
       labels:
-        name: web
-        app: {{ template "fullname" . }}
-        component: web
+        app: portus
+        tier: registry
     spec:
       containers:
-        - image: "{{ .Values.images.web }}:{{ .Values.imageTag.web }}"
-          name: web
-          command:
-            - /bin/bash
-            - -c
-          args:
-            - "pumactl -F /portus/config/puma.rb start"
-          env:
-            - name: PORTUS_MACHINE_FQDN_VALUE
-              value: {{ default "" .Values.FQDN }}
-            - name: PORTUS_DB_HOST
-              value: "db"
-            - name: PORTUS_DB_PASSWORD
-              value: "portus"
-            - name: PORTUS_PUMA_HOST
-              value: "0.0.0.0:3000"
-            - name: PORTUS_PUMA_WORKERS
-              value: "2"
-            - name: PORTUS_PUMA_MAX_THREADS
-              value: "4"
-          ports:
-            - containerPort: 3000
-              name: portus
-              protocol: TCP
-          volumeMounts:
-            - mountPath: /portus
-              name: portus-config
-        - image: "{{ .Values.images.web }}:{{ .Values.imageTag.web }}"
-          name: crono
-          command:
-            - /bin/bash
-            - -c
-          args:
-            - "/bin/crono"
-          env:
-            - name: PORTUS_MACHINE_FQDN_VALUE
-              value: {{ default "" .Values.FQDN }}
-            - name: PORTUS_DB_HOST
-              value: "db"
-            - name: PORTUS_DB_PASSWORD
-              value: "portus"
-          volumeMounts:
-            - mountPath: /portus
-              name: portus-config
+      - name: portus
+        image: opensuse/portus:head
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 1Gi
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: certificates
+          mountPath: /certificates
+          readOnly: true
+        env:
+        - name:  PORTUS_MACHINE_FQDN_VALUE
+          value: "portus"
+        # DB
+        - name:  PORTUS_PRODUCTION_HOST
+          value: "$(MARIADB_SERVICE_HOST)"
+        - name:  PORTUS_PRODUCTION_DATABASE
+          value: "portus_production"
+        - name: PORTUS_PRODUCTION_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-secrets
+              key: password
+
+        # Secrets
+        - name: PORTUS_SECRET_KEY_BASE
+          valueFrom:
+            secretKeyRef:
+              name: portus-secrets
+              key: keybase
+        - name: PORTUS_KEY_PATH
+          value: "/certificates/portus.key"
+        - name: PORTUS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: portus-secrets
+              key: password
+
+        # For simplicity we serve assets through Rails.
+        - name: RAILS_SERVE_STATIC_FILES
+          value: "true"
+        - name: PORTUS_PUMA_TLS_KEY
+          value: "/certificates/portus.key"
+        - name: PORTUS_PUMA_TLS_CERT
+          value: "/certificates/portus.crt"
       volumes:
-        - name: portus-config
-          {{- if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: web
-          {{- else }}
-          emptyDir: {}
-          {{- end -}}
+      - name: secrets
+        secret:
+          secretName: certificates
+      - name: certificates
+        secret:
+          secretName: certificates
