@@ -1,0 +1,16 @@
+description: Fast, reliable, scalable, and easy to use open-source relational database
+  system.
+engine: gotpl
+home: https://www.mysql.com/
+icon: https://www.mysql.com/common/logos/logo-mysql-170x115.png
+keywords:
+- mysql
+- database
+- sql
+maintainers:
+- email: saurabh.surana@suse.com
+  name: Saurabh Surana
+name: mysql
+sources:
+- https://github.com/saurabhsurana/kube-charts
+version: 0.2.5
